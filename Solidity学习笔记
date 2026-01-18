@@ -1,0 +1,117 @@
+# Solidity学习笔记
+
+## 1、合约基本框架———2026.1.18
+
+```jsx
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity >=0.8.2 <0.9.0;
+
+/**
+ * @title Storage
+ * @dev Store & retrieve value in a variable
+ * @custom:dev-run-script ./scripts/deploy_with_ethers.ts
+ */
+contract Storage {
+
+    uint256 number;
+
+    /**
+     * @dev Store value in variable
+     * @param num value to store
+     */
+    function store(uint256 num) public {
+        number = num;
+    }
+
+    /**
+     * @dev Return value 
+     * @return value of 'number'
+     */
+    function retrieve() public view returns (uint256){
+        return number;
+    }
+}
+```
+
+以上述代码为例子：
+
+// SPDX-License-Identifier: GPL-3.0      ——————>指定代码的开源协议
+
+pragma solidity >=0.8.2 <0.9.0;             ——————>声明Solidity编译器版本
+
+合约主体：
+
+contract Storage {
+
+    uint256 number;
+
+    function store(uint256 num) public {
+        number = num;
+    }
+
+    function retrieve() public view returns (uint256){
+        return number;
+    }
+}
+
+contract : 关键字用于声明合约，以上述代码为例，声明了一个叫Storage的合约，大括号{}里的内容就是该合约所执行的操作或交易。
+
+uint256 : 变量类型定义，声明一个叫number的无符号整型256位整数类型变量。除了uint256还有其他整数型指定位宽是uint8到uint256,同理int即为有符号整型，其位宽与uint相同。
+
+function store(uint256 num) public {  
+
+ number = num;
+
+ }
+
+使用关键字`function`定义了一个名叫store的函数，传入一个无符号256位的整型变量num,
+
+- `public`修饰的变量和函数，任何用户或者合约都能调用和访问。
+- `private`修饰的变量和函数，只能在其所在的合约中调用和访问，即使是其子合约也没有权限访问。
+
+除了`public`和`private`之外，还有另外两个描述函数可见性的修饰词：`internal`（内部）和`external`（外部）。
+
+- `internal` 和 `private` 类似，不过， 如果某个合约继承自其父合约，这个合约即可以访问父合约中定义的“内部”函数。
+- `external` 与`public` 类似，只不过这些函数只能在合约之外调用 - 它们不能被合约内的其他函数调用。
+
+| **修饰符** | **外部访问** | **合约内访问** | **继承合约访问** |
+| --- | --- | --- | --- |
+| **public** | ✅ | ✅ | ✅ |
+| **external** | ✅ | ❌ | ❌ |
+| **internal** | ❌ | ✅ | ✅ |
+| **private** | ❌ | ✅ | ❌ |
+
+大括号{}内即为该函数所执行的交易或操作：number = num; 即把num的值传给number存储起来。
+
+function retrieve() public view returns (uint256){
+        return number;
+
+ }
+
+同理，这个retrieve函数没有传入任何参数，是公开的任何用户或合约都能调用和访问该函数。
+
+关于View：
+
+在 Solidity 中 constant、view、pure 三个函数修饰词的作用是告诉编译器，函数不改变 / 不读取状态变量，这样函数执行就可以不消耗 gas 了（是完全不消耗！），因为不需要矿工来验证，所以用好这几个关键词对省 gas 很重要。
+
+- constant: 常量，不可更改（在最新的 Solidity 版本中，**`constant` 已不再作为函数的修饰符**（以前它和 `view` 作用类似）。现在 `constant` 仅用于声明**状态变量**（例如：`uint256 public constant MAX_VAL = 100;`）。重点区分view和pure即可）
+- view: 可读取但不可更改合约中的状态变量
+- pure: 不可读取且不可更改合约中的状态变量
+
+returns 返回一个参数，这个参数类型是uint256，在大括号里面能直接看到该函数返回的是number的值。
+
+该retrieve函数的作用就是读取number的值并且返回给用户。
+
+至此，这个简单的例子已经完全解释清楚。如果对于这些已经理解，可以去看看Solidity的官方文档拓展一下：[合约结构 — Solidity 0.8.24 文档](https://docs.soliditylang.org/zh-cn/latest/structure-of-a-contract.html#)
+
+所以一个合约的基本框架包括 ：开源协议，编译器版本，合约本体（合约内又包含了执行交易所需的函数）
+
+***补充：***
+
+- 状态变量与局部变量：
+    - `uint256 number;` 定义在合约内、函数外，这叫状态变量（State Variable），它是永久存储在区块链上的（存储在 `Storage` 中，消耗gas）。
+    - 而在 `store(uint256 num)` 中的 `num` 是局部变量，存在于内存中，执行完就消失了（不费或少费gas）。
+- Gas 的消耗逻辑：
+    - `view` 和 `pure` 不消耗 Gas 是有前提的：只有当它们被外部（如钱包、前端 JS）直接查询时才免费。
+    - 注意：如果一个 `view` 函数被合约内部的另一个写操作函数（没有 view 修饰的函数）调用，它依然会消耗 Gas。
